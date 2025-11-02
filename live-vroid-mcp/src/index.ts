@@ -23,46 +23,10 @@ interface EmotionKeywords {
   [key: string]: string[];
 }
 
-// Available animations from Mixamo
-const ANIMATIONS = [
-  "idle",
-  "wave",
-  "jump",
-  "walk",
-  "run",
-  "dance",
-  "sit",
-  "stand",
-  "nod",
-  "shake_head",
-  "laugh",
-  "think",
-  "point",
-  "clap",
-  "bow",
-] as const;
-
-// Available emotions
-const EMOTIONS = [
-  "neutral",
-  "happy",
-  "sad",
-  "angry",
-  "surprised",
-  "confused",
-  "excited",
-  "bored",
-  "shy",
-  "confident",
-] as const;
-
-// Look at targets
-const LOOK_TARGETS = ["user", "away", "down", "up", "left", "right"] as const;
-
-// Type definitions for the constants
-type Animation = (typeof ANIMATIONS)[number];
-type Emotion = (typeof EMOTIONS)[number];
-type LookTarget = (typeof LOOK_TARGETS)[number];
+// Fallback defaults if Godot hasn't sent capabilities yet
+const DEFAULT_ANIMATIONS = ["idle"] as const;
+const DEFAULT_EMOTIONS = ["neutral"] as const;
+const DEFAULT_LOOK_TARGETS = ["user"] as const;
 
 // Singleton Godot connection instance
 let godotConnection: GodotConnection | null = null;
@@ -75,13 +39,36 @@ function getGodotConnection(): GodotConnection {
   return godotConnection;
 }
 
+// Get current capabilities from Godot or return defaults
+function getCapabilities() {
+  const godot = getGodotConnection();
+  const caps = godot.getCapabilities();
+
+  if (caps && caps.clips.length > 0) {
+    return {
+      animations: caps.clips,
+      emotions: caps.emotions.length > 0 ? caps.emotions : [...DEFAULT_EMOTIONS],
+      lookTargets:
+        caps.lookTargets.length > 0 ? caps.lookTargets : [...DEFAULT_LOOK_TARGETS],
+    };
+  }
+
+  // Return defaults if no capabilities received yet
+  return {
+    animations: [...DEFAULT_ANIMATIONS],
+    emotions: [...DEFAULT_EMOTIONS],
+    lookTargets: [...DEFAULT_LOOK_TARGETS],
+  };
+}
+
 // Parse natural language to animation commands
 function parseIntent(text: string): AvatarCommand {
   const lower = text.toLowerCase();
+  const caps = getCapabilities();
 
   // Animation detection
-  let clip: Animation = "idle";
-  for (const anim of ANIMATIONS) {
+  let clip: string = "idle";
+  for (const anim of caps.animations) {
     if (lower.includes(anim)) {
       clip = anim;
       break;
@@ -89,7 +76,7 @@ function parseIntent(text: string): AvatarCommand {
   }
 
   // Emotion detection
-  let emotion: Emotion = "neutral";
+  let emotion: string = "neutral";
   const emotionMap: EmotionKeywords = {
     happy: ["happy", "joy", "glad", "pleased", "delighted", "cheerful"],
     sad: ["sad", "unhappy", "down", "depressed", "blue"],
@@ -99,23 +86,32 @@ function parseIntent(text: string): AvatarCommand {
     excited: ["excited", "thrilled", "enthusiastic"],
     shy: ["shy", "bashful", "timid", "nervous"],
     confident: ["confident", "sure", "certain", "bold"],
+    relaxed: ["relaxed", "calm", "peaceful", "tranquil"],
+    bored: ["bored", "uninterested", "disengaged"],
   };
 
   for (const [emo, keywords] of Object.entries(emotionMap)) {
-    if (keywords.some((keyword: string) => lower.includes(keyword))) {
-      emotion = emo as Emotion;
+    if (
+      keywords.some((keyword: string) => lower.includes(keyword)) &&
+      caps.emotions.includes(emo)
+    ) {
+      emotion = emo;
       break;
     }
   }
 
   // Look direction
-  let lookAt: LookTarget = "user";
+  let lookAt: string = "user";
   if (lower.includes("look away") || lower.includes("don't look")) {
     lookAt = "away";
   } else if (lower.includes("look down")) {
     lookAt = "down";
   } else if (lower.includes("look up")) {
     lookAt = "up";
+  } else if (lower.includes("look left")) {
+    lookAt = "left";
+  } else if (lower.includes("look right")) {
+    lookAt = "right";
   }
 
   return { clip, emotion, lookAt };
@@ -127,7 +123,7 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
-// Register control_avatar tool
+// Register control_avatar tool with dynamic schema
 server.registerTool(
   "control_avatar",
   {
@@ -135,27 +131,47 @@ server.registerTool(
     description: "Control the VRoid avatar's animation, emotion, and gaze",
     inputSchema: {
       clip: z
-        .enum(ANIMATIONS)
-        .describe("Animation clip to play")
+        .string()
+        .describe("Animation clip to play (e.g., idle, wave, sit, dance)")
         .default("idle"),
       emotion: z
-        .enum(EMOTIONS)
-        .describe("Facial expression")
+        .string()
+        .describe(
+          "Facial expression (e.g., neutral, happy, sad, angry, surprised)",
+        )
         .default("neutral"),
-      lookAt: z.enum(LOOK_TARGETS).describe("Where to look").default("user"),
+      lookAt: z
+        .string()
+        .describe("Where to look (e.g., user, away, down, up, left, right)")
+        .default("user"),
     },
   },
   async ({
-    clip,
+    clip = "idle",
     emotion = "neutral",
     lookAt = "user",
   }: {
-    clip: Animation;
-    emotion?: Emotion;
-    lookAt?: LookTarget;
+    clip?: string;
+    emotion?: string;
+    lookAt?: string;
   }) => {
     try {
       const godot = getGodotConnection();
+      const caps = getCapabilities();
+
+      // Validate against available capabilities
+      if (!caps.animations.includes(clip)) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Animation "${clip}" not available. Available: ${caps.animations.join(", ")}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
       const command: AvatarCommand = { clip, emotion, lookAt };
 
       // Send command through the Godot connection
@@ -226,7 +242,7 @@ server.registerTool(
   },
 );
 
-// Register sequence_animations tool
+// Register sequence_animations tool with dynamic validation
 server.registerTool(
   "sequence_animations",
   {
@@ -236,9 +252,9 @@ server.registerTool(
       sequence: z
         .array(
           z.object({
-            clip: z.enum(ANIMATIONS),
-            emotion: z.enum(EMOTIONS).optional(),
-            lookAt: z.enum(LOOK_TARGETS).optional(),
+            clip: z.string().describe("Animation clip name"),
+            emotion: z.string().optional().describe("Facial expression"),
+            lookAt: z.string().optional().describe("Where to look"),
             delay: z
               .number()
               .optional()
@@ -251,8 +267,25 @@ server.registerTool(
   async ({ sequence }: { sequence: AnimationStep[] }) => {
     try {
       const godot = getGodotConnection();
+      const caps = getCapabilities();
       const results: string[] = [];
 
+      // Validate all clips in sequence before executing
+      for (const step of sequence) {
+        if (!caps.animations.includes(step.clip)) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Animation "${step.clip}" not available. Available: ${caps.animations.join(", ")}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      }
+
+      // Execute sequence
       for (const step of sequence) {
         if (step.delay) {
           await new Promise((resolve) => setTimeout(resolve, step.delay));

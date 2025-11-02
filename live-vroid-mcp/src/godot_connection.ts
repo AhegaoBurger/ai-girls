@@ -20,6 +20,30 @@ export interface GodotCommand {
 }
 
 /**
+ * Capabilities advertised by Godot
+ */
+export interface GodotCapabilities {
+  clips: string[];
+  emotions: string[];
+  lookTargets: string[];
+  mouthShapes: string[];
+}
+
+/**
+ * Welcome message from Godot
+ */
+export interface WelcomeMessage {
+  type: "welcome";
+  message: string;
+  state: {
+    animation: string;
+    emotion: string;
+    lookAt: string;
+  };
+  capabilities: GodotCapabilities;
+}
+
+/**
  * Manages WebSocket connection to the Godot engine
  * This handles avatar control commands for the Live-Vroid system
  */
@@ -35,6 +59,7 @@ export class GodotConnection {
     }
   > = new Map();
   private commandId = 0;
+  private capabilities: GodotCapabilities | null = null;
 
   /**
    * Creates a new Godot connection
@@ -96,7 +121,16 @@ export class GodotConnection {
 
             // Try to parse as JSON
             try {
-              const response: GodotResponse = JSON.parse(message);
+              const response: any = JSON.parse(message);
+
+              // Handle welcome message with capabilities
+              if (response.type === "welcome" && response.capabilities) {
+                this.capabilities = response.capabilities;
+                console.error(
+                  "Received capabilities from Godot:",
+                  this.capabilities,
+                );
+              }
 
               // Handle command responses
               if ("commandId" in response) {
@@ -308,5 +342,20 @@ export class GodotConnection {
       url: this.url,
       pendingCommands: this.commandQueue.size,
     };
+  }
+
+  /**
+   * Gets the capabilities received from Godot
+   * Returns null if no capabilities have been received yet
+   */
+  getCapabilities(): GodotCapabilities | null {
+    return this.capabilities;
+  }
+
+  /**
+   * Checks if capabilities have been received
+   */
+  hasCapabilities(): boolean {
+    return this.capabilities !== null;
   }
 }
