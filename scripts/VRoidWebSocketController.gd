@@ -86,22 +86,62 @@ var mouth_shapes = {
 
 func _ready():
 	print("VRoid WebSocket Controller starting...")
-	
+
 	if not animation_player:
 		push_error("AnimationPlayer not assigned!")
 		return
-	
+
 	# List available animations for debugging
 	print("Available animations:")
 	for anim in animation_player.get_animation_list():
 		print("  - ", anim)
-	
+
 	if auto_start:
 		start_server()
-	
+
 	# Set default state
 	_play_animation("idle")
 	_set_emotion("neutral")
+
+# Get system capabilities by analyzing available animations
+func _get_capabilities() -> Dictionary:
+	if not animation_player:
+		return {}
+
+	var capabilities = {
+		"clips": [],
+		"emotions": [],
+		"lookTargets": [],
+		"mouthShapes": []
+	}
+
+	# Extract available clips from animation_mappings
+	for clip_name in animation_mappings.keys():
+		var anim_name = animation_mappings[clip_name]
+		if animation_player.has_animation(anim_name):
+			capabilities["clips"].append(clip_name)
+
+	# Extract available emotions from emotion_mappings
+	for emotion_name in emotion_mappings.keys():
+		var anim_name = emotion_mappings[emotion_name]
+		if animation_player.has_animation(anim_name):
+			capabilities["emotions"].append(emotion_name)
+
+	# Extract available look directions from look_mappings
+	for look_name in look_mappings.keys():
+		var anim_name = look_mappings[look_name]
+		# Empty string means it's supported (looking forward)
+		if anim_name.is_empty() or animation_player.has_animation(anim_name):
+			capabilities["lookTargets"].append(look_name)
+
+	# Extract available mouth shapes from mouth_shapes
+	for shape_name in mouth_shapes.keys():
+		var anim_name = mouth_shapes[shape_name]
+		if animation_player.has_animation(anim_name):
+			capabilities["mouthShapes"].append(shape_name)
+
+	print("Capabilities discovered: ", capabilities)
+	return capabilities
 
 func start_server() -> bool:
 	var err = tcp_server.listen(websocket_port)
@@ -147,12 +187,12 @@ func _process(_delta):
 func _handle_new_connection(tcp_connection: StreamPeerTCP):
 	var ws_peer = WebSocketPeer.new()
 	var err = ws_peer.accept_stream(tcp_connection)
-	
+
 	if err == OK:
 		websocket_peers.append(ws_peer)
 		print("WebSocket client connected")
-		
-		# Send welcome with current state
+
+		# Send welcome with current state and capabilities
 		ws_peer.poll()
 		if ws_peer.get_ready_state() == WebSocketPeer.STATE_OPEN:
 			var welcome = {
@@ -162,7 +202,8 @@ func _handle_new_connection(tcp_connection: StreamPeerTCP):
 					"animation": current_clip,
 					"emotion": current_emotion,
 					"lookAt": current_look
-				}
+				},
+				"capabilities": _get_capabilities()
 			}
 			ws_peer.send_text(JSON.stringify(welcome))
 	else:
@@ -184,8 +225,9 @@ func _handle_data(peer: WebSocketPeer, data: PackedByteArray):
 func _process_command(peer: WebSocketPeer, command: Dictionary):
 	var success = true
 	var results = {}
-	
+
 	# Handle MCP-style commands
+	var command_id = command.get("commandId", "")
 	if command.has("type") and command.get("type") == "avatar_control":
 		var params = command.get("params", {})
 		command = params  # Unwrap the params
@@ -217,7 +259,6 @@ func _process_command(peer: WebSocketPeer, command: Dictionary):
 			results["lookAt_warning"] = "Look direction not found: " + look_at
 	
 	# Send response if command has an ID
-	var command_id = command.get("commandId", "")
 	if not command_id.is_empty():
 		var response = {
 			"status": "success" if success else "partial",
