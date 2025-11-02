@@ -1,5 +1,8 @@
 *.vrm.res
 
+# Large scene files (use binary .scn instead of text .tscn for version control)
+scenes/*.tscn
+
 # Godot-specific ignores
 .import/
 .godot/
