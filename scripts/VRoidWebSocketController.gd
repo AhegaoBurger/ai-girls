@@ -22,6 +22,11 @@ var current_clip: String = "idle"
 var current_emotion: String = "neutral"
 var current_look: String = ""
 
+# Animation state tracking
+var current_animation_type: String = "looping"  # "one_shot" or "looping"
+var current_locomotion_anim: String = ""  # Track the actual Godot animation name for locomotion
+var one_shot_animations = ["wave", "jump", "blow_kiss", "clap", "bow", "nod", "shake_head"]
+
 # Map MCP animation names to your actual animation names
 var animation_mappings = {
 	# Body animations (locomotion library)
@@ -50,38 +55,38 @@ var animation_mappings = {
 
 # Map MCP emotions to your Global animations
 var emotion_mappings = {
-	"neutral": "[Global]/neutral",
-	"happy": "[Global]/happy",
-	"sad": "[Global]/sad",
-	"angry": "[Global]/angry",
-	"surprised": "[Global]/surprised",
-	"relaxed": "[Global]/relaxed",
-	
+	"neutral": "neutral",
+	"happy": "happy",
+	"sad": "sad",
+	"angry": "angry",
+	"surprised": "surprised",
+	"relaxed": "relaxed",
+
 	# Map additional MCP emotions to closest available
-	"confused": "[Global]/surprised",
-	"excited": "[Global]/happy",
-	"bored": "[Global]/relaxed",
-	"shy": "[Global]/sad",
-	"confident": "[Global]/neutral"
+	"confused": "surprised",
+	"excited": "happy",
+	"bored": "relaxed",
+	"shy": "sad",
+	"confident": "neutral"
 }
 
 # Look direction mappings
 var look_mappings = {
-	"down": "[Global]/lookDown",
-	"left": "[Global]/lookLeft",
-	"right": "[Global]/lookRight",
-	"up": "[Global]/lookUp",
-	"away": "[Global]/lookLeft",  # Default "away" to looking left
+	"down": "lookDown",
+	"left": "lookLeft",
+	"right": "lookRight",
+	"up": "lookUp",
+	"away": "lookLeft",  # Default "away" to looking left
 	"user": ""  # Empty means look forward (no specific animation)
 }
 
 # Mouth shape animations for lip sync (future use)
 var mouth_shapes = {
-	"aa": "[Global]/aa",
-	"ee": "[Global]/ee",
-	"ih": "[Global]/ih",
-	"oh": "[Global]/oh",
-	"ou": "[Global]/ou"
+	"aa": "aa",
+	"ee": "ee",
+	"ih": "ih",
+	"oh": "oh",
+	"ou": "ou"
 }
 
 func _ready():
@@ -91,6 +96,9 @@ func _ready():
 		push_error("AnimationPlayer not assigned!")
 		return
 
+	# Connect to animation_finished signal
+	animation_player.animation_finished.connect(_on_animation_finished)
+
 	# List available animations for debugging
 	print("Available animations:")
 	for anim in animation_player.get_animation_list():
@@ -99,9 +107,23 @@ func _ready():
 	if auto_start:
 		start_server()
 
-	# Set default state
+	# Set default state - defer to next frame to ensure AnimationPlayer is ready
+	call_deferred("_initialize_default_state")
+
+func _initialize_default_state():
 	_play_animation("idle")
 	_set_emotion("neutral")
+
+# Signal handler for when animations finish
+func _on_animation_finished(anim_name: String):
+	# Ignore non-locomotion animations (emotions, looks, etc. that use advance(0.0))
+	if not anim_name.begins_with("locomotion/"):
+		return
+
+	# Only reset to idle if it was a one-shot locomotion animation
+	if current_animation_type == "one_shot":
+		print("One-shot animation finished: ", anim_name, " - returning to idle")
+		_play_animation("idle")
 
 # Get system capabilities by analyzing available animations
 func _get_capabilities() -> Dictionary:
@@ -235,7 +257,7 @@ func _process_command(peer: WebSocketPeer, command: Dictionary):
 	# Process clip (body animation)
 	if command.has("clip") and not command.get("clip", "").is_empty():
 		var clip = command.get("clip")
-		if await _play_animation(clip):
+		if _play_animation(clip):
 			results["animation"] = clip
 		else:
 			success = false
@@ -270,37 +292,37 @@ func _process_command(peer: WebSocketPeer, command: Dictionary):
 func _play_animation(clip_name: String) -> bool:
 	if not animation_player:
 		return false
-	
+
 	# Check if we have a mapping for this animation
 	if not clip_name in animation_mappings:
 		push_warning("No mapping for animation: " + clip_name)
 		return false
-	
+
 	var anim_name = animation_mappings[clip_name]
-	
+
 	# Check if the animation exists
 	if not animation_player.has_animation(anim_name):
 		push_warning("Animation not found: " + anim_name)
-		
+
 		# Try without the library prefix
 		var simple_name = anim_name.split("/")[-1]
 		if animation_player.has_animation(simple_name):
 			anim_name = simple_name
 		else:
 			return false
-	
+
+	# Determine animation type before playing
+	if clip_name in one_shot_animations:
+		current_animation_type = "one_shot"
+	else:
+		current_animation_type = "looping"
+
 	# Play the animation
 	animation_player.play(anim_name)
 	current_clip = clip_name
-	print("Playing animation: ", anim_name)
-	
-	# For one-shot animations, return to idle
-	if clip_name in ["wave", "jump", "blow_kiss", "clap", "bow", "nod", "shake_head"]:
-		# Wait for animation to complete then return to idle
-		if animation_player.current_animation_length > 0:
-			await get_tree().create_timer(animation_player.current_animation_length).timeout
-			_play_animation("idle")
-	
+	current_locomotion_anim = anim_name  # Store the actual animation name
+	print("Playing animation: ", anim_name, " (", current_animation_type, ")")
+
 	return true
 
 func _set_emotion(emotion_name: String) -> bool:
@@ -308,8 +330,8 @@ func _set_emotion(emotion_name: String) -> bool:
 		return false
 	
 	# Reset expression first
-	if animation_player.has_animation("[Global]/RESET"):
-		animation_player.play("[Global]/RESET")
+	if animation_player.has_animation("RESET"):
+		animation_player.play("RESET")
 		animation_player.advance(0.0)  # Apply immediately
 	
 	# Check if we have a mapping for this emotion
@@ -335,7 +357,13 @@ func _set_emotion(emotion_name: String) -> bool:
 	animation_player.advance(0.0)  # Apply immediately since these are state-based
 	current_emotion = emotion_name
 	print("Set emotion: ", anim_name)
-	
+
+	# Restart the locomotion animation if one is active
+	# This is necessary because playing the emotion stops the locomotion
+	if not current_locomotion_anim.is_empty():
+		animation_player.play(current_locomotion_anim)
+		print("Restarting locomotion: ", current_locomotion_anim)
+
 	return true
 
 func _set_look_direction(direction: String) -> bool:
@@ -371,7 +399,13 @@ func _set_look_direction(direction: String) -> bool:
 	animation_player.advance(0.0)  # Apply immediately since these are state-based
 	current_look = direction
 	print("Set look direction: ", anim_name)
-	
+
+	# Restart the locomotion animation if one is active
+	# This is necessary because playing the look direction stops the locomotion
+	if not current_locomotion_anim.is_empty():
+		animation_player.play(current_locomotion_anim)
+		print("Restarting locomotion: ", current_locomotion_anim)
+
 	return true
 
 # Helper function to play mouth shapes for lip sync (future use)
@@ -384,10 +418,13 @@ func _play_mouth_shape(shape: String):
 
 # Helper function to trigger blink animation
 func _blink():
-	if animation_player and animation_player.has_animation("[Global]/blink"):
-		animation_player.play("[Global]/blink")
+	if animation_player and animation_player.has_animation("blink"):
+		animation_player.play("blink")
 		# Return to previous expression after blink
 		await get_tree().create_timer(0.2).timeout
 		if current_emotion in emotion_mappings:
 			animation_player.play(emotion_mappings[current_emotion])
 			animation_player.advance(0.0)
+		# Restart locomotion after blink
+		if not current_locomotion_anim.is_empty():
+			animation_player.play(current_locomotion_anim)
