@@ -1,7 +1,0 @@
-8a41c91 - Artur Shirokov, 3 months ago : Improved the server with a better ws connection based on the godot mcp server.
-37f4dc0 - Artur Shirokov, 3 months ago : Added a README.
-9f7136c - Artur Shirokov, 3 months ago : Managed to run the server, now testing if it will connect and work with godot.
-f5d6cf6 - Artur Shirokov, 3 months ago : Still not able to make it work.
-f4ff49d - Artur Shirokov, 3 months ago : Still having errors connecting to claude desktop.
-5731dc3 - Artur Shirokov, 3 months ago : Setup other stuff.
-abc6e19 - Artur Shirokov, 3 months ago : Initial commit.

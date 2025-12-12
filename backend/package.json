@@ -1,0 +1,30 @@
+{
+  "name": "ai-girls-backend",
+  "version": "1.0.0",
+  "description": "Hono backend for AI Girls web app with Gemini AI integration",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": ["hono", "gemini", "websocket", "ai", "avatar"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "hono": "^4.6.14",
+    "@hono/node-server": "^1.13.7",
+    "ai": "^4.0.0",
+    "@ai-sdk/google": "^1.0.0",
+    "ws": "^8.18.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.9",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "~5.7.3"
+  }
+}
