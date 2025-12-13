@@ -1,8 +1,8 @@
-import { google } from '@ai-sdk/google';
-import { generateText, streamText, tool } from 'ai';
-import { z } from 'zod';
-import type { AvatarCommand, GodotCapabilities } from '../types/index.js';
-import { parseTextToCommand } from '../lib/avatar-controller.js';
+import { google } from "@ai-sdk/google";
+import { generateText, streamText, tool } from "ai";
+import { z } from "zod";
+import type { AvatarCommand, GodotCapabilities } from "../types/index.js";
+import { parseTextToCommand } from "../lib/avatar-controller.js";
 
 /**
  * System prompt for the AI companion
@@ -36,12 +36,19 @@ const controlAvatarTool = tool({
     clip: z
       .string()
       .optional()
-      .describe('Body animation to play: idle, wave, sit, jump, dance, blow_kiss, clap, bow, nod, shake_head'),
+      .describe(
+        "Body animation to play: idle, wave, sit, jump, dance, blow_kiss, clap, bow, nod, shake_head",
+      ),
     emotion: z
       .string()
       .optional()
-      .describe('Facial expression to show: neutral, happy, sad, angry, surprised, relaxed'),
-    lookAt: z.string().optional().describe('Where to direct gaze: user, away, down, up, left, right'),
+      .describe(
+        "Facial expression to show: neutral, happy, sad, angry, surprised, relaxed",
+      ),
+    lookAt: z
+      .string()
+      .optional()
+      .describe("Where to direct gaze: user, away, down, up, left, right"),
   }),
   execute: async ({ clip, emotion, lookAt }) => {
     // Return success - actual execution happens in the route handler
@@ -58,7 +65,9 @@ const animateFromTextTool = tool({
   parameters: z.object({
     text: z
       .string()
-      .describe('Natural language description of the action/emotion (e.g., "wave happily", "sit down sadly")'),
+      .describe(
+        'Natural language description of the action/emotion (e.g., "wave happily", "sit down sadly")',
+      ),
   }),
   execute: async ({ text }) => {
     // Return success - actual parsing happens in the route handler
@@ -78,21 +87,26 @@ export class GeminiAI {
   private model: any;
   private systemPrompt: string;
   private capabilities: GodotCapabilities | null = null;
-  private conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+  private conversationHistory: Array<{
+    role: "user" | "assistant";
+    content: string;
+  }> = [];
 
   constructor(apiKey: string, systemPrompt?: string) {
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is required');
+      throw new Error("GEMINI_API_KEY is required");
     }
 
     this.systemPrompt = systemPrompt || DEFAULT_SYSTEM_PROMPT;
 
     // Initialize Gemini model with AI SDK
-    this.model = google('gemini-2.0-flash-exp', {
+    this.model = google("gemini-2.5-flash", {
       // Cost-effective model with good function calling
     });
 
-    console.log('[Gemini AI] Initialized with AI SDK and model: gemini-2.0-flash-exp');
+    console.log(
+      "[Gemini AI] Initialized with AI SDK and model: gemini-2.0-flash-exp",
+    );
   }
 
   /**
@@ -100,7 +114,7 @@ export class GeminiAI {
    */
   setCapabilities(capabilities: GodotCapabilities) {
     this.capabilities = capabilities;
-    console.log('[Gemini AI] Capabilities updated:', capabilities);
+    console.log("[Gemini AI] Capabilities updated:", capabilities);
   }
 
   /**
@@ -110,7 +124,7 @@ export class GeminiAI {
     try {
       // Add user message to history
       this.conversationHistory.push({
-        role: 'user',
+        role: "user",
         content: userMessage,
       });
 
@@ -134,23 +148,33 @@ export class GeminiAI {
 
       const avatarCommands: AvatarCommand[] = [];
 
-      // Process tool calls
-      if (result.toolCalls && result.toolCalls.length > 0) {
-        console.log('[Gemini AI] Tool calls:', result.toolCalls);
+      // Process tool calls from steps
+      if (result.steps && result.steps.length > 0) {
+        console.log("[Gemini AI] Total steps:", result.steps.length);
 
-        for (const toolCall of result.toolCalls) {
-          if (toolCall.toolName === 'control_avatar') {
-            const args = toolCall.args as { clip?: string; emotion?: string; lookAt?: string };
-            avatarCommands.push({
-              clip: args.clip,
-              emotion: args.emotion,
-              lookAt: args.lookAt,
-            });
-          } else if (toolCall.toolName === 'animate_from_text') {
-            const args = toolCall.args as { text: string };
-            // Parse text to avatar command
-            const parsed = parseTextToCommand(args.text, this.capabilities);
-            avatarCommands.push(parsed);
+        for (const step of result.steps) {
+          if (step.toolCalls && step.toolCalls.length > 0) {
+            console.log("[Gemini AI] Tool calls in step:", step.toolCalls);
+
+            for (const toolCall of step.toolCalls) {
+              if (toolCall.toolName === "control_avatar") {
+                const args = toolCall.args as {
+                  clip?: string;
+                  emotion?: string;
+                  lookAt?: string;
+                };
+                avatarCommands.push({
+                  clip: args.clip,
+                  emotion: args.emotion,
+                  lookAt: args.lookAt,
+                });
+              } else if (toolCall.toolName === "animate_from_text") {
+                const args = toolCall.args as { text: string };
+                // Parse text to avatar command
+                const parsed = parseTextToCommand(args.text, this.capabilities);
+                avatarCommands.push(parsed);
+              }
+            }
           }
         }
       }
@@ -160,7 +184,7 @@ export class GeminiAI {
 
       // Add assistant response to history
       this.conversationHistory.push({
-        role: 'assistant',
+        role: "assistant",
         content: responseText,
       });
 
@@ -169,8 +193,8 @@ export class GeminiAI {
         avatarCommands,
       };
     } catch (error) {
-      console.error('[Gemini AI] Error:', error);
-      throw new Error('Failed to get response from Gemini AI');
+      console.error("[Gemini AI] Error:", error);
+      throw new Error("Failed to get response from Gemini AI");
     }
   }
 
@@ -180,7 +204,7 @@ export class GeminiAI {
   async streamMessage(userMessage: string) {
     // Add user message to history
     this.conversationHistory.push({
-      role: 'user',
+      role: "user",
       content: userMessage,
     });
 
@@ -209,7 +233,7 @@ export class GeminiAI {
    */
   resetChat() {
     this.conversationHistory = [];
-    console.log('[Gemini AI] Chat session reset');
+    console.log("[Gemini AI] Chat session reset");
   }
 
   /**
@@ -217,7 +241,7 @@ export class GeminiAI {
    */
   updateSystemPrompt(prompt: string) {
     this.systemPrompt = prompt;
-    console.log('[Gemini AI] System prompt updated');
+    console.log("[Gemini AI] System prompt updated");
   }
 
   /**

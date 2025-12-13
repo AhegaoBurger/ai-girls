@@ -12,6 +12,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
@@ -20,6 +24,10 @@ export default defineConfig({
       '/ws': {
         target: 'ws://localhost:3000',
         ws: true,
+      },
+      '/godot': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
       },
     },
   },
