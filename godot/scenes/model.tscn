@@ -7,7 +7,7 @@
 [ext_resource type="Script" uid="uid://0yv1egqc757a" path="res://addons/vrm/vrm_collider_group.gd" id="5_ylk6e"]
 [ext_resource type="Script" uid="uid://of2blioqs78h" path="res://addons/vrm/vrm_collider.gd" id="6_2tb40"]
 [ext_resource type="ArrayMesh" uid="uid://wm72v2ao1uup" path="res://meshes/vroid_face.tres" id="7_d1fkk"]
-[ext_resource type="ArrayMesh" uid="uid://batr7xsgdedi3" path="res://meshes/vroid_body.tres" id="8_honm4"]
+[ext_resource type="ArrayMesh" uid="uid://crbhtm3en4s8f" path="res://meshes/vroid_body.res" id="8_honm4"]
 [ext_resource type="ArrayMesh" uid="uid://b6y3ppv2mlxho" path="res://meshes/vroid_hair.tres" id="9_honm4"]
 [ext_resource type="AnimationLibrary" uid="uid://bft5m6ke1b84m" path="res://animations/locomotion/facial.res" id="12_ig0l6"]
 [ext_resource type="AnimationLibrary" uid="uid://bc53wp6cjyjpt" path="res://animations/idle/idle.res" id="13_ig0l6"]
