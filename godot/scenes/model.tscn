@@ -2359,7 +2359,8 @@ collider_groups = Array[ExtResource("5_ylk6e")]([SubResource("Resource_ijq2i"), 
 collider_library = Array[ExtResource("6_2tb40")]([SubResource("Resource_7dy8i"), SubResource("Resource_geww0"), SubResource("Resource_ebuim"), SubResource("Resource_hoc2s"), SubResource("Resource_es20r"), SubResource("Resource_egg06"), SubResource("Resource_pr12g"), SubResource("Resource_b4l23"), SubResource("Resource_a6m3c"), SubResource("Resource_nfux2"), SubResource("Resource_pfb41"), SubResource("Resource_5cu5g"), SubResource("Resource_jaoq4"), SubResource("Resource_66s0t"), SubResource("Resource_s6cci"), SubResource("Resource_ebcg6"), SubResource("Resource_wwb0f"), SubResource("Resource_2cf8g"), SubResource("Resource_p8wen"), SubResource("Resource_vfg3l"), SubResource("Resource_k7p0n"), SubResource("Resource_ma4v2"), SubResource("Resource_naoql"), SubResource("Resource_6rrb2"), SubResource("Resource_1lwo5"), SubResource("Resource_0wlun"), SubResource("Resource_u8npi"), SubResource("Resource_b2sw7")])
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.441561, 0.38070637)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.41, 0.60377043)
+keep_aspect = 0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.7071068, 0.35355338, -0.61237246, 0, 0.8660254, 0.50000006, 0.7071068, -0.35355338, 0.61237246, -0.46801072, 1.8687375, 0.08628875)
