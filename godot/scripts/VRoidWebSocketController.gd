@@ -40,7 +40,12 @@ var one_shot_animations = ["wave", "jump", "blow_kiss", "clap", "bow", "nod", "s
 # Map MCP animation names to your actual animation names
 var animation_mappings = {
 	# Body animations (locomotion library)
-	"idle": "locomotion/X Bot",
+	"idle": "idle/idle_standard",
+	"idle_1": "idle/idle_1",
+	"idle_happy": "idle/idle_happy",
+	"idle_sad": "idle/idle_sad",
+	"idle_standing": "idle/idle_standing",
+
 	"sit": "locomotion/Sitting",
 	"blow_kiss": "locomotion/Blow A Kiss",
 	

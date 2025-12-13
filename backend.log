@@ -77,3 +77,66 @@ serveStatic: root path '/Users/bity/personal/ai-girls/frontend/dist' is not foun
    - Health: http://localhost:3000/health
    - WebSocket (Godot): ws://localhost:3000/godot
    - WebSocket (State): ws://localhost:3000/ws/state
+[Godot WS] Upgrade request
+[Godot WS] Client connected
+[Godot WS] Received: capabilities
+[Godot WS] Received capabilities: {
+  clips: [
+    'idle',       'sit',
+    'blow_kiss',  'wave',
+    'jump',       'dance',
+    'clap',       'bow',
+    'think',      'point',
+    'nod',        'walk',
+    'run',        'stand',
+    'shake_head', 'laugh'
+  ],
+  emotions: [
+    'neutral',   'happy',
+    'sad',       'angry',
+    'surprised', 'relaxed',
+    'confused',  'excited',
+    'bored',     'shy',
+    'confident'
+  ],
+  lookTargets: [ 'down', 'left', 'right', 'up', 'away', 'user' ],
+  mouthShapes: [ 'aa', 'ee', 'ih', 'oh', 'ou' ]
+}
+[Gemini AI] Capabilities updated: {
+  clips: [
+    'idle',       'sit',
+    'blow_kiss',  'wave',
+    'jump',       'dance',
+    'clap',       'bow',
+    'think',      'point',
+    'nod',        'walk',
+    'run',        'stand',
+    'shake_head', 'laugh'
+  ],
+  emotions: [
+    'neutral',   'happy',
+    'sad',       'angry',
+    'surprised', 'relaxed',
+    'confused',  'excited',
+    'bored',     'shy',
+    'confident'
+  ],
+  lookTargets: [ 'down', 'left', 'right', 'up', 'away', 'user' ],
+  mouthShapes: [ 'aa', 'ee', 'ih', 'oh', 'ou' ]
+}
+[Chat API] User message: make the avatar do something
+[Gemini AI] Total steps: 2
+[Gemini AI] Tool calls in step: [
+  {
+    type: 'tool-call',
+    toolCallId: 'qgaSQVjA2V96wMvN',
+    toolName: 'control_avatar',
+    args: { clip: 'wave', emotion: 'happy' }
+  }
+]
+[Chat API] AI response: I waved hello! Is there anything else I can do for you?
+[Chat API] Avatar commands: [ { clip: 'wave', emotion: 'happy', lookAt: undefined } ]
+[Godot WS] Sent command: { clip: 'wave', emotion: 'happy', lookAt: undefined }
+
+[Shutdown] Shutting down gracefully...
+5:57:31 PM [tsx] Previous process hasn't exited yet. Force killing...
