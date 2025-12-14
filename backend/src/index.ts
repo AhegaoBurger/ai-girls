@@ -139,7 +139,9 @@ app.get(
           if (message.type === 'capabilities') {
             capabilities = message.data;
             console.log('[Godot WS] Received capabilities:', capabilities);
-            gemini.setCapabilities(capabilities);
+            if (capabilities) {
+              gemini.setCapabilities(capabilities);
+            }
           } else if (message.type === 'state_update') {
             if (message.data) {
               currentState = { ...currentState, ...message.data };
@@ -150,7 +152,7 @@ app.get(
           console.error('[Godot WS] Parse error:', error);
         }
       },
-      onClose() {
+      onClose(event, ws) {
         godotClients.delete(ws);
         console.log('[Godot WS] Client disconnected');
       },
@@ -179,7 +181,7 @@ app.get(
       onMessage(event, ws) {
         // Frontend is read-only, no need to handle messages
       },
-      onClose() {
+      onClose(event, ws) {
         frontendClients.delete(ws);
         console.log('[State WS] Frontend client disconnected');
       },
