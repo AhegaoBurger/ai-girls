@@ -1,9 +1,5 @@
 *.vrm.res
 
-# Godot web build - exclude large .pck file (exceeds GitHub 100MB limit)
-# Keep HTML, JS, WASM but exclude the packed game data
-godot-web-build/*.pck
-
 # Godot-specific ignores
 .import/
 .godot/

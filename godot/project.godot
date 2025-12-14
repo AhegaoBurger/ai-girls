@@ -15,6 +15,12 @@ run/main_scene="uid://bo3qpvbhglfr5"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[display]
+
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/handheld/orientation=1
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/Godot-MToon-Shader/plugin.cfg", "res://addons/vrm/plugin.cfg")
