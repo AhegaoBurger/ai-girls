@@ -1,3 +1,4 @@
+// It's a sense -> think -> act loop
 // Get memory (query)
 //
 // Add memory (write)
@@ -14,3 +15,7 @@
 // Create a semantic memory
 //
 // Create a procedura memory
+//
+//
+// Inject Body Capability + Current Environment
+//
