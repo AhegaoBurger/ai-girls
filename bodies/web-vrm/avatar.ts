@@ -3,6 +3,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import type { VRM } from "@pixiv/three-vrm";
+import { updateHead } from "./helpers";
 
 // Load Avatar
 // renderer
@@ -99,7 +100,9 @@ function animate() {
 
   if (currentVrm) {
     // update vrm
-    currentVrm.update(deltaTime);
+    // currentVrm.update(deltaTime);
+    updateHead(currentVrm, lookAtTarget, deltaTime); // head leads
+    currentVrm.update(deltaTime); // eyes finish
   }
 
   renderer.render(scene, camera);
